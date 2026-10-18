@@ -63,6 +63,18 @@
                         <TextBlock Text="Import" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+                <Button Classes="toolbar" Command="{Binding ExportAll}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="avares://UABEANext4/Assets/Icons/action-export-asset.png" />
+                        <TextBlock Text="Export All" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="toolbar" Command="{Binding ImportAll}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="avares://UABEANext4/Assets/Icons/action-import-asset.png" />
+                        <TextBlock Text="Import All" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <Button Classes="toolbar" Command="{Binding EditDump}">
                     <StackPanel Orientation="Horizontal">
                         <Image Source="avares://UABEANext4/Assets/Icons/action-view-info.png" />
