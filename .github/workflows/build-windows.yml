@@ -25,7 +25,7 @@ jobs:
 
     - name: Build and Optimize
       run: |
-        dotnet publish UABEANext4.sln -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:ServerGarbageCollection=false /p:TrimMode=partial
+        dotnet publish UABEANext4.Desktop/UABEANext4.Desktop.csproj -c Release -f net8.0 -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:ServerGarbageCollection=false
 
     - name: Upload
       uses: actions/upload-artifact@v6
