@@ -394,6 +394,21 @@ public partial class AssetDocumentViewModel : Document
         }
     }
 
+    [RelayCommand]
+    public async Task ExportAll()
+    {
+        // CollectionView respects the search filter, so only visible assets are included
+        SelectedItems = CollectionView.Cast<AssetInst>().ToList();
+        await Export();
+    }
+
+    [RelayCommand]
+    public async Task ImportAll()
+    {
+        SelectedItems = CollectionView.Cast<AssetInst>().ToList();
+        await Import();
+    }
+
     public async Task ImportBatch(List<AssetInst> assets)
     {
         var storageProvider = StorageService.GetStorageProvider();
