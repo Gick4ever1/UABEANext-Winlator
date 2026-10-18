@@ -1,10 +1,10 @@
-## UABEANext
+# UABEANext Winlator
 
-UABEA with dock support. When this repo becomes stable and reaches feature parity, the code will be merged into the original UABEA repo.
+Fork of [UABEANext](https://github.com/nesrak1/UABEANext) tuned for running under Wine/Winlator on Android.
 
-Nightly: 
+## Changes in this fork
+- Fixes the .NET 7+ startup hang under Wine by relaunching once with `DOTNET_EnableWriteXorExecute=0`
+- Main window opens maximized by default.
 
-- https://nightly.link/nesrak1/UABEANext/workflows/build-windows/master/uabea-windows.zip
-- https://nightly.link/nesrak1/UABEANext/workflows/build-ubuntu/master/uabea-ubuntu.zip
-
-Report any issues on the original repo: https://github.com/nesrak1/UABEA
+## Download
+Grab the latest build from the [Releases](../../releases) page.
