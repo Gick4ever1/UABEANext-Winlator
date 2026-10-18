@@ -15,17 +15,18 @@ namespace UABEANext4.Views;
 public partial class MainWindow : Window
 {
     public MainWindow()
-    {
+{
 #if DEBUG
-        InitializeComponent(attachDevTools: false);
-        DevToolsAdblock.Attach(this, new DevToolsOptions());
+    InitializeComponent(attachDevTools: false);
+    DevToolsAdblock.Attach(this, new DevToolsOptions());
 #else
-        InitializeComponent();
+    InitializeComponent();
 #endif
-        AddHandler(DragDrop.DropEvent, Drop);
+    WindowState = WindowState.Maximized;   
+    AddHandler(DragDrop.DropEvent, Drop);
 
-        Opened += async (s, e) => await HandleCommandLineArgs();
-    }
+    Opened += async (s, e) => await HandleCommandLineArgs();
+}
 
     private async Task HandleCommandLineArgs()
     {
