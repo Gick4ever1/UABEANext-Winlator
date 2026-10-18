@@ -23,20 +23,12 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v2
-
-    - name: Build
-      run: msbuild UABEANext4.sln /restore /p:Configuration=Release
-    
-    - name: Remove unused platforms
+    - name: Build and Optimize
       run: |
-        Get-ChildItem -Path "UABEANext4.Desktop\bin\Release\net8.0\runtimes" -Directory | 
-        Where-Object { $_.Name -notin @("win-x64", "win7-x64", "win") } | 
-        Remove-Item -Recurse -Force
+        dotnet publish UABEANext4.sln -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:ServerGarbageCollection=false /p:TrimMode=partial
 
     - name: Upload
       uses: actions/upload-artifact@v6
       with:
         name: uabea-windows
-        path: UABEANext4.Desktop/bin/Release/net8.0
+        path: UABEANext4.Desktop/bin/Release/net8.0/win-x64/publish/
