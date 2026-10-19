@@ -23,21 +23,20 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Build and Optimize
-      run: |
-        dotnet publish UABEANext4.Desktop/UABEANext4.Desktop.csproj -c Release -f net8.0 -r win-x64 --self-contained true /p:PublishSingleFile=false /p:PublishReadyToRun=true /p:ServerGarbageCollection=false
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v2
 
-    - name: Copy Required Class Data and Plugins
+    - name: Build
+      run: msbuild UABEANext4.sln /restore /p:Configuration=Release
+    
+    - name: Remove unused platforms
       run: |
-        if (Test-Path "UABEANext4.Desktop\classdata.tpk") {
-          Copy-Item "UABEANext4.Desktop\classdata.tpk" "UABEANext4.Desktop\bin\Release\net8.0\win-x64\publish\"
-        }
-        if (Test-Path "classdata.tpk") {
-          Copy-Item "classdata.tpk" "UABEANext4.Desktop\bin\Release\net8.0\win-x64\publish\"
-        }
+        Get-ChildItem -Path "UABEANext4.Desktop\bin\Release\net8.0\runtimes" -Directory | 
+        Where-Object { $_.Name -notin @("win-x64", "win7-x64", "win") } | 
+        Remove-Item -Recurse -Force
 
     - name: Upload
       uses: actions/upload-artifact@v6
       with:
         name: uabea-windows
-        path: UABEANext4.Desktop/bin/Release/net8.0/win-x64/publish/
+        path: UABEANext4.Desktop/bin/Release/net8.0
