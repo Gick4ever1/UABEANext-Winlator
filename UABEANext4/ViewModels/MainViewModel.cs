@@ -224,7 +224,7 @@ public partial class MainViewModel : ViewModelBase
 
         var options = new ParallelOptions
         {
-            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount - 1, 4)
+            MaxDegreeOfParallelism = 1
         };
 
         Workspace.SetProgressThreadSafe(0f, "Loading files...");
@@ -235,53 +235,59 @@ public partial class MainViewModel : ViewModelBase
         await Task.Run(() =>
         {
             Workspace.ModifyMutex.WaitOne();
-            Workspace.ProgressValue = 0;
-
-            var startLoadOrder = Workspace.NextLoadIndex;
-            var currentCount = 0;
-            var anyLoaded = false;
-
-            Parallel.ForEach(filePaths, options, (fileName, state, index) =>
+            try
             {
-                if (fileName is not null)
+                Workspace.ProgressValue = 0;
+
+                var startLoadOrder = Workspace.NextLoadIndex;
+                var currentCount = 0;
+                var anyLoaded = false;
+
+                Parallel.ForEach(filePaths, options, (fileName, state, index) =>
                 {
-                    try
+                    if (fileName is not null)
                     {
-                        var fileStream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        Workspace.LoadAnyFile(fileStream, startLoadOrder + (int)index);
-
-                        var currentCountNow = Interlocked.Increment(ref currentCount);
-                        var currentProgress = currentCountNow / (float)totalCount;
-                        anyLoaded = true;
-                        Workspace.SetProgressThreadSafe(currentProgress, "Loaded " + Path.GetFileName(fileName));
-                    }
-                    catch (DuplicateWorkspaceFileException dupEx)
-                    {
-                        lock (duplicateFilesList)
+                        try
                         {
-                            duplicateFilesList.Add(dupEx.Info);
+                            var fileStream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            Workspace.LoadAnyFile(fileStream, startLoadOrder + (int)index);
+
+                            var currentCountNow = Interlocked.Increment(ref currentCount);
+                            var currentProgress = currentCountNow / (float)totalCount;
+                            anyLoaded = true;
+                            Workspace.SetProgressThreadSafe(currentProgress, "Loaded " + Path.GetFileName(fileName));
+                        }
+                        catch (DuplicateWorkspaceFileException dupEx)
+                        {
+                            lock (duplicateFilesList)
+                            {
+                                duplicateFilesList.Add(dupEx.Info);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            var currentCountNow = Interlocked.Increment(ref currentCount);
+                            var currentProgress = currentCountNow / (float)totalCount;
+                            Workspace.SetProgressThreadSafe(currentProgress, "Skipping " + Path.GetFileName(fileName));
+
+                            lock (stackTraceSb)
+                            {
+                                stackTraceSb.AppendLine(ex.ToString());
+                            }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        var currentCountNow = Interlocked.Increment(ref currentCount);
-                        var currentProgress = currentCountNow / (float)totalCount;
-                        Workspace.SetProgressThreadSafe(currentProgress, "Skipping " + Path.GetFileName(fileName));
+                });
 
-                        lock (stackTraceSb)
-                        {
-                            stackTraceSb.AppendLine(ex.ToString());
-                        }
-                    }
-                }
-            });
+                if (anyLoaded)
+                    Workspace.SetProgressThreadSafe(1f, "Done");
+                else
+                    Workspace.SetProgressThreadSafe(1f, "All files skipped, nothing loaded");
 
-            if (anyLoaded)
-                Workspace.SetProgressThreadSafe(1f, "Done");
-            else
-                Workspace.SetProgressThreadSafe(1f, "All files skipped, nothing loaded");
-
-            Workspace.ModifyMutex.ReleaseMutex();
+            }
+            finally
+            {
+                Workspace.ModifyMutex.ReleaseMutex();
+            }
         });
 
         if (duplicateFilesList.Count > 0 || stackTraceSb.Length > 0)
