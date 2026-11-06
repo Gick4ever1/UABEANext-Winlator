@@ -51,6 +51,12 @@ public partial class ConfigurationValues : ObservableObject
     [property: ConfigDesc("When unchecked, sprites are placed on a virtual canvas with padding. When checked, sprites are fully cropped.")]
     private bool _fullCropSprites = true;
 
+    [ObservableProperty]
+    [property: ConfigTitle("Parallel File Loading")]
+    [property: ConfigDesc("How many files to load at the same time when opening a folder or several files.\nHigher is faster but uses more RAM. Use 1 for very large bundles (e.g. multi-GB data.unity3d).")]
+    [property: ConfigRange(1, 16)]
+    private int _parallelFileLoading = 1;
+
     private readonly Action<int> _saveDebounceFunc = DebounceUtils.Debounce(
         (int _) => ConfigurationManager.SaveConfig(), 500);
 

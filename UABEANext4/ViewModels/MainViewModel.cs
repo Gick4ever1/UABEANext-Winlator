@@ -224,7 +224,7 @@ public partial class MainViewModel : ViewModelBase
 
         var options = new ParallelOptions
         {
-            MaxDegreeOfParallelism = 1
+            MaxDegreeOfParallelism = Math.Max(1, ConfigurationManager.Settings.ParallelFileLoading)
         };
 
         Workspace.SetProgressThreadSafe(0f, "Loading files...");
@@ -232,6 +232,9 @@ public partial class MainViewModel : ViewModelBase
         var duplicateFilesList = new List<DuplicateLoadInfo>();
         var stackTraceSb = new StringBuilder();
 
+        Workspace.IsBusy = true;
+        try
+        {
         await Task.Run(() =>
         {
             Workspace.ModifyMutex.WaitOne();
@@ -289,6 +292,8 @@ public partial class MainViewModel : ViewModelBase
                 Workspace.ModifyMutex.ReleaseMutex();
             }
         });
+        }
+        finally { Workspace.IsBusy = false; }
 
         if (duplicateFilesList.Count > 0 || stackTraceSb.Length > 0)
         {
@@ -403,6 +408,8 @@ public partial class MainViewModel : ViewModelBase
         var compressSave = ConfigurationManager.Settings.CompressBundlesOnSave;
 
         Workspace.ModifyMutex.WaitOne();
+        Workspace.IsBusy = true;
+        Workspace.SetProgressThreadSafe(0f, "Saving... large bundles can take several minutes");
         try
         {
             var rootItems = new HashSet<WorkspaceItem>();
@@ -465,6 +472,7 @@ public partial class MainViewModel : ViewModelBase
         }
         finally
         {
+            Workspace.IsBusy = false;
             Workspace.ModifyMutex.ReleaseMutex();
         }
     }
@@ -472,6 +480,8 @@ public partial class MainViewModel : ViewModelBase
     private async Task DoSaveCopy(IEnumerable<WorkspaceItem> items)
     {
         Workspace.ModifyMutex.WaitOne();
+        Workspace.IsBusy = true;
+        Workspace.SetProgressThreadSafe(0f, "Saving... large bundles can take several minutes");
         try
         {
             var rootItems = new HashSet<WorkspaceItem>();
@@ -494,6 +504,7 @@ public partial class MainViewModel : ViewModelBase
         }
         finally
         {
+            Workspace.IsBusy = false;
             Workspace.ModifyMutex.ReleaseMutex();
         }
     }

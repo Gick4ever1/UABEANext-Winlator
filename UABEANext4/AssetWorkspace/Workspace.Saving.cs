@@ -195,15 +195,15 @@ public partial class Workspace
 
         if (type == WorkspaceItemType.AssetsFile)
         {
-            WriteAssetsFile(item, tempWriteStream);
+            await Task.Run(() => WriteAssetsFile(item, tempWriteStream));
         }
         else if (type == WorkspaceItemType.BundleFile)
         {
-            WriteBundleFile(item, tempWriteStream);
+            await Task.Run(() => WriteBundleFile(item, tempWriteStream));
         }
         else if (type == WorkspaceItemType.ResourceFile)
         {
-            WriteResource(item, tempWriteStream);
+            await Task.Run(() => WriteResource(item, tempWriteStream));
         }
 
         stream?.Close();
@@ -225,7 +225,7 @@ public partial class Workspace
 
                 var compBundle = new AssetBundleFile();
                 compBundle.Read(new AssetsFileReader(uncompStream));
-                compBundle.Pack(new AssetsFileWriter(compTempStream), origBunInst.originalCompression, true, null);
+                await Task.Run(() => compBundle.Pack(new AssetsFileWriter(compTempStream), origBunInst.originalCompression, true, null));
             }
             catch (Exception ex)
             {
@@ -343,17 +343,17 @@ public partial class Workspace
             using var stream = await result.OpenWriteAsync();
             if (type == WorkspaceItemType.AssetsFile)
             {
-                WriteAssetsFile(item, stream);
+                await Task.Run(() => WriteAssetsFile(item, stream));
                 UnsavedItems.Remove(item);
             }
             else if (type == WorkspaceItemType.BundleFile)
             {
-                WriteBundleFile(item, stream);
+                await Task.Run(() => WriteBundleFile(item, stream));
                 UnsavedItems.Remove(item);
             }
             else if (type == WorkspaceItemType.ResourceFile)
             {
-                WriteResource(item, stream);
+                await Task.Run(() => WriteResource(item, stream));
                 UnsavedItems.Remove(item);
             }
         }

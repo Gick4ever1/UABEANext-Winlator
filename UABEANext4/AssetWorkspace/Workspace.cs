@@ -27,6 +27,8 @@ public partial class Workspace : ObservableObject
     public float _progressValue = 0f;
     [ObservableProperty]
     public string _progressText = "";
+    [ObservableProperty]
+    public bool _isBusy = false;
 
     public ObservableCollection<WorkspaceItem> RootItems { get; } = [];
     public Dictionary<string, WorkspaceItem> ItemLookup { get; } = [];
