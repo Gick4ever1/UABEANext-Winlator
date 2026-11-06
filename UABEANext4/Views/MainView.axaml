@@ -48,8 +48,8 @@
         </Menu>
         <DockControl Layout="{Binding Layout}" Margin="4" Grid.Row="1" Name="dockControl" IsEnabled="{Binding !Workspace.IsBusy}" />
         <Grid ColumnDefinitions="1*,4,2*" Margin="4,0,0,4" Grid.Row="2">
-            <ProgressBar Value="{Binding Workspace.ProgressValue}" Minimum="0" Maximum="1" Grid.Column="0" IsIndeterminate="{Binding Workspace.IsBusy}" />
-            <Label Content="{Binding Workspace.ProgressText}" Grid.Column="2" Padding="0" />
+            <ProgressBar Value="{Binding Workspace.ProgressValue}" Minimum="0" Maximum="1" Grid.Column="0" IsIndeterminate="{Binding Workspace.IsProgressIndeterminate}" />
+            <Label Content="{Binding Workspace.StatusLabelText}" Grid.Column="2" Padding="0" />
         </Grid>
     </Grid>
 </UserControl>

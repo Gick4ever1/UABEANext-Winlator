@@ -225,7 +225,7 @@ public partial class Workspace
 
                 var compBundle = new AssetBundleFile();
                 compBundle.Read(new AssetsFileReader(uncompStream));
-                await Task.Run(() => compBundle.Pack(new AssetsFileWriter(compTempStream), origBunInst.originalCompression, true, null));
+                await Task.Run(() => compBundle.Pack(new AssetsFileWriter(compTempStream), origBunInst.originalCompression, true, new SaveCompressProgress(this, "Compressing bundle...")));
             }
             catch (Exception ex)
             {

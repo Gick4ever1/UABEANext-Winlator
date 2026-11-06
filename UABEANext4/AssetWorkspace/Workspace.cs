@@ -24,11 +24,32 @@ public partial class Workspace : ObservableObject
 
     // this should be its own class
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsProgressIndeterminate))]
+    [NotifyPropertyChangedFor(nameof(StatusLabelText))]
     public float _progressValue = 0f;
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StatusLabelText))]
     public string _progressText = "";
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsProgressIndeterminate))]
+    [NotifyPropertyChangedFor(nameof(StatusLabelText))]
     public bool _isBusy = false;
+
+    // animated bar only while the amount of work is unknown
+    public bool IsProgressIndeterminate => IsBusy && ProgressValue <= 0f;
+
+    public string StatusLabelText
+    {
+        get
+        {
+            if (IsBusy && ProgressValue > 0f && ProgressValue < 1f
+                && ConfigurationManager.Settings.ShowProgressPercentage)
+            {
+                return $"{(int)(ProgressValue * 100f)}% - {ProgressText}";
+            }
+            return ProgressText;
+        }
+    }
 
     public ObservableCollection<WorkspaceItem> RootItems { get; } = [];
     public Dictionary<string, WorkspaceItem> ItemLookup { get; } = [];

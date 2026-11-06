@@ -57,6 +57,11 @@ public partial class ConfigurationValues : ObservableObject
     [property: ConfigRange(1, 16)]
     private int _parallelFileLoading = 1;
 
+    [ObservableProperty]
+    [property: ConfigTitle("Show Progress Percentage")]
+    [property: ConfigDesc("Show a percentage in the status bar when a long operation reports real progress (loading several files, compressing a bundle on save).")]
+    private bool _showProgressPercentage = true;
+
     private readonly Action<int> _saveDebounceFunc = DebounceUtils.Debounce(
         (int _) => ConfigurationManager.SaveConfig(), 500);
 
