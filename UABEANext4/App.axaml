@@ -3,7 +3,7 @@
              xmlns:sys="clr-namespace:System;assembly=netstandard"
              xmlns:local="using:UABEANext4"
              x:Class="UABEANext4.App"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Dark">
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>

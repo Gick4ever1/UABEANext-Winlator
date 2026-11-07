@@ -12,7 +12,7 @@ public partial class ConfigurationValues : ObservableObject
     [ObservableProperty]
     [property: ConfigTitle("Theme Type")]
     [property: ConfigDesc("The theme to use.")]
-    private ConfigurationThemeType _themeType = ConfigurationThemeType.Auto;
+    private ConfigurationThemeType _themeType = ConfigurationThemeType.Dark;
 
     [ObservableProperty]
     [property: ConfigTitle("Use Managed over IL2CPP")]
