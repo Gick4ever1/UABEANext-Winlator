@@ -26,6 +26,9 @@ public partial class EditDataViewModel : ViewModelBase, IDialogAware<byte[]?>
     public int Height => 550;
     public bool IsModal => false;
 
+    // The "Low Graphics Preset" button is only shown for QualitySettings assets.
+    public bool IsQualitySettings => _baseField.TemplateField?.Type == "QualitySettings";
+
     public event Action<byte[]?>? RequestClose;
 
     [Obsolete("This constructor is for the designer only and should not be used directly.", true)]
@@ -102,6 +105,33 @@ public partial class EditDataViewModel : ViewModelBase, IDialogAware<byte[]?>
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task BtnLowQuality_Click()
+    {
+        if (Document == null || IsBusy)
+            return;
+
+        try
+        {
+            var root = Newtonsoft.Json.Linq.JToken.Parse(Document.Text);
+            int changed = UABEANext4.Logic.LowQualityPreset.Apply(root, out int presets);
+            if (presets == 0)
+            {
+                await MessageBoxUtil.ShowDialog("Low Graphics Preset", "No quality presets were found in this asset.");
+                return;
+            }
+
+            Document.Text = root.ToString();
+            await MessageBoxUtil.ShowDialog(
+                "Low Graphics Preset",
+                $"Changed {changed} values across {presets} quality presets.\n\nPress OK to apply them, or Cancel to discard.");
+        }
+        catch (Exception ex)
+        {
+            await MessageBoxUtil.ShowDialog("Error", "Could not apply the preset: " + ex.Message);
         }
     }
 
