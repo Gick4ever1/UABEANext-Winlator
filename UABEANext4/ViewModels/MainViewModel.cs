@@ -385,6 +385,109 @@ public partial class MainViewModel : ViewModelBase
         await OpenFiles(fileNames);
     }
 
+    public async void ToolsLowPipelinePreset()
+    {
+        const string title = "Low Graphics Preset (URP/HDRP)";
+
+        var storageProvider = StorageService.GetStorageProvider();
+        if (storageProvider is null)
+        {
+            return;
+        }
+
+        var pickResult = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Select the folder with globalgamemanagers and globalgamemanagers.assets",
+            AllowMultiple = false
+        });
+
+        var folder = FileDialogUtils.GetOpenFolderDialogFolders(pickResult).FirstOrDefault();
+        if (string.IsNullOrEmpty(folder))
+        {
+            return;
+        }
+
+        string ggmPath = Path.Combine(folder, "globalgamemanagers");
+        string assetsPath = Path.Combine(folder, LowPipelineAuto.AssetsFileName);
+        if (!File.Exists(ggmPath) || !File.Exists(assetsPath))
+        {
+            await MessageBoxUtil.ShowDialog(title, "The folder must contain both globalgamemanagers and globalgamemanagers.assets.");
+            return;
+        }
+
+        var toLoad = new List<string>();
+        if (!Workspace.ItemLookup.ContainsKey("globalgamemanagers"))
+        {
+            toLoad.Add(ggmPath);
+        }
+        if (!Workspace.ItemLookup.ContainsKey(LowPipelineAuto.AssetsFileName))
+        {
+            toLoad.Add(assetsPath);
+        }
+        if (toLoad.Count > 0)
+        {
+            await OpenFiles(toLoad);
+        }
+
+        if (!Workspace.ItemLookup.TryGetValue("globalgamemanagers", out var ggmItem)
+            || ggmItem.Object is not AssetsTools.NET.Extra.AssetsFileInstance ggmInst
+            || !Workspace.ItemLookup.ContainsKey(LowPipelineAuto.AssetsFileName))
+        {
+            await MessageBoxUtil.ShowDialog(title, "The two files could not be loaded.");
+            return;
+        }
+
+        LowPipelineAuto.Result run;
+        Workspace.IsBusy = true;
+        Workspace.SetProgressThreadSafe(0f, "Detecting render pipeline...");
+        try
+        {
+            run = await Task.Run(() => LowPipelineAuto.Analyze(Workspace, ggmInst, new LowRenderPipelinePreset.Options()));
+        }
+        catch (Exception ex)
+        {
+            await MessageBoxUtil.ShowDialog(title, "Failed: " + ex.Message);
+            return;
+        }
+        finally
+        {
+            Workspace.IsBusy = false;
+        }
+
+        var lines = new List<string>(run.Lines);
+        if (run.Updates.Count > 0)
+        {
+            try
+            {
+                string backupPath = assetsPath + ".bak";
+                if (!File.Exists(backupPath))
+                {
+                    File.Copy(assetsPath, backupPath);
+                    lines.Add("Backup: " + Path.GetFileName(backupPath));
+                }
+            }
+            catch (Exception ex)
+            {
+                lines.Add("Note: backup failed: " + ex.Message);
+            }
+
+            foreach (var update in run.Updates)
+            {
+                update.Asset.UpdateAssetDataAndRow(Workspace, update.Data);
+            }
+
+            lines.Add("");
+            lines.Add("Changes are applied in memory. Use File > Save All to write them.");
+            Workspace.SetProgressThreadSafe(1f, $"Low preset applied to {run.Updates.Count} assets");
+        }
+        else
+        {
+            Workspace.SetProgressThreadSafe(1f, "Low preset: nothing to change");
+        }
+
+        await MessageBoxUtil.ShowDialog(title, string.Join("\n", lines));
+    }
+
     public async void FileOpenFolder()
     {
         var storageProvider = StorageService.GetStorageProvider();
