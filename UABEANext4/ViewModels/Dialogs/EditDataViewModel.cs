@@ -18,6 +18,9 @@ public partial class EditDataViewModel : ViewModelBase, IDialogAware<byte[]?>
     [ObservableProperty] 
     private bool _isBusy;
 
+    [ObservableProperty]
+    private string _statusText = "";
+
     private readonly AssetTypeValueField _baseField;
     private readonly RefTypeManager _refMan;
 
@@ -109,7 +112,7 @@ public partial class EditDataViewModel : ViewModelBase, IDialogAware<byte[]?>
     }
 
     [RelayCommand]
-    public async Task BtnLowQuality_Click()
+    public void BtnLowQuality_Click()
     {
         if (Document == null || IsBusy)
             return;
@@ -120,18 +123,16 @@ public partial class EditDataViewModel : ViewModelBase, IDialogAware<byte[]?>
             int changed = UABEANext4.Logic.LowQualityPreset.Apply(root, out int presets);
             if (presets == 0)
             {
-                await MessageBoxUtil.ShowDialog("Low Graphics Preset", "No quality presets were found in this asset.");
+                StatusText = "No quality presets were found in this asset.";
                 return;
             }
 
             Document.Text = root.ToString();
-            await MessageBoxUtil.ShowDialog(
-                "Low Graphics Preset",
-                $"Changed {changed} values across {presets} quality presets.\n\nPress OK to apply them, or Cancel to discard.");
+            StatusText = $"Changed {changed} values in {presets} presets. Press OK to apply, or Cancel to discard.";
         }
         catch (Exception ex)
         {
-            await MessageBoxUtil.ShowDialog("Error", "Could not apply the preset: " + ex.Message);
+            StatusText = "Could not apply the preset: " + ex.Message;
         }
     }
 

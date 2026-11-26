@@ -31,6 +31,19 @@ public partial class MessageBoxViewModel : ViewModelBase, IDialogAware<MessageBo
 
     public event Action<MessageBoxResult?>? RequestClose;
 
+    private bool _closed;
+
+    // Close only once: the original code invoked RequestClose twice per click
+    // (the real result, then Unknown), which can hang under Wine.
+    private void CloseOnce(MessageBoxResult result)
+    {
+        if (_closed)
+            return;
+
+        _closed = true;
+        RequestClose?.Invoke(result);
+    }
+
     public MessageBoxViewModel()
     {
     }
@@ -60,59 +73,59 @@ public partial class MessageBoxViewModel : ViewModelBase, IDialogAware<MessageBo
     {
         if (MsgType == MessageBoxType.OK)
         {
-            RequestClose?.Invoke(MessageBoxResult.OK);
+            CloseOnce(MessageBoxResult.OK);
         }
         else if (MsgType == MessageBoxType.OKCancel)
         {
-            RequestClose?.Invoke(MessageBoxResult.OK);
+            CloseOnce(MessageBoxResult.OK);
         }
         else if (MsgType == MessageBoxType.YesNo)
         {
-            RequestClose?.Invoke(MessageBoxResult.Yes);
+            CloseOnce(MessageBoxResult.Yes);
         }
         else if (MsgType == MessageBoxType.YesNoCancel)
         {
-            RequestClose?.Invoke(MessageBoxResult.Yes);
+            CloseOnce(MessageBoxResult.Yes);
         }
         else if (MsgType == MessageBoxType.Custom)
         {
-            RequestClose?.Invoke(MessageBoxResult.CustomButtonA);
+            CloseOnce(MessageBoxResult.CustomButtonA);
         }
-        RequestClose?.Invoke(MessageBoxResult.Unknown);
+        CloseOnce(MessageBoxResult.Unknown);
     }
 
     public void BtnB_Click()
     {
         if (MsgType == MessageBoxType.OKCancel)
         {
-            RequestClose?.Invoke(MessageBoxResult.Cancel);
+            CloseOnce(MessageBoxResult.Cancel);
         }
         else if (MsgType == MessageBoxType.YesNo)
         {
-            RequestClose?.Invoke(MessageBoxResult.No);
+            CloseOnce(MessageBoxResult.No);
         }
         else if (MsgType == MessageBoxType.YesNoCancel)
         {
-            RequestClose?.Invoke(MessageBoxResult.No);
+            CloseOnce(MessageBoxResult.No);
         }
         else if (MsgType == MessageBoxType.Custom)
         {
-            RequestClose?.Invoke(MessageBoxResult.CustomButtonB);
+            CloseOnce(MessageBoxResult.CustomButtonB);
         }
-        RequestClose?.Invoke(MessageBoxResult.Unknown);
+        CloseOnce(MessageBoxResult.Unknown);
     }
 
     public void BtnC_Click()
     {
         if (MsgType == MessageBoxType.YesNoCancel)
         {
-            RequestClose?.Invoke(MessageBoxResult.Cancel);
+            CloseOnce(MessageBoxResult.Cancel);
         }
         else if (MsgType == MessageBoxType.Custom)
         {
-            RequestClose?.Invoke(MessageBoxResult.CustomButtonC);
+            CloseOnce(MessageBoxResult.CustomButtonC);
         }
-        RequestClose?.Invoke(MessageBoxResult.Unknown);
+        CloseOnce(MessageBoxResult.Unknown);
     }
 }
 
