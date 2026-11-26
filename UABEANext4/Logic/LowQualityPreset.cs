@@ -55,6 +55,8 @@ public static class LowQualityPreset
         ["terrainTreeDistance"] = (RuleMode.Min, 300),
         ["terrainBillboardStart"] = (RuleMode.Min, 30),
         ["terrainMaxTrees"] = (RuleMode.Min, 10),
+        // default (current) quality level = first preset
+        ["m_CurrentQuality"] = (RuleMode.Set, 0),
         // texture streaming with a 256 MB budget
         ["streamingMipmapsActive"] = (RuleMode.Set, 1),
         ["streamingMipmapsMemoryBudget"] = (RuleMode.Min, 256),
