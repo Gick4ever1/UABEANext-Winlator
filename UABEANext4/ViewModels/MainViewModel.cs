@@ -385,6 +385,26 @@ public partial class MainViewModel : ViewModelBase
         await OpenFiles(fileNames);
     }
 
+    private static bool HasPipelineFiles(string dir)
+    {
+        return File.Exists(Path.Combine(dir, "data.unity3d"))
+            || (File.Exists(Path.Combine(dir, "globalgamemanagers"))
+                && File.Exists(Path.Combine(dir, LowPipelineAuto.AssetsFileName)));
+    }
+
+    private AssetsTools.NET.Extra.AssetsFileInstance? FindLoadedAssetsFile(string name)
+    {
+        foreach (var (key, item) in Workspace.ItemLookup)
+        {
+            if (key.Equals(name, StringComparison.OrdinalIgnoreCase)
+                && item.Object is AssetsTools.NET.Extra.AssetsFileInstance inst)
+            {
+                return inst;
+            }
+        }
+        return null;
+    }
+
     public async void ToolsLowPipelinePreset()
     {
         const string title = "Low Graphics Preset (URP/HDRP)";
@@ -395,45 +415,82 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        var pickResult = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        // keep asking until a usable folder is picked (an accidental pick of the wrong
+        // folder just reopens the picker there) or the picker is cancelled
+        string? folder = null;
+        IStorageFolder? startLocation = null;
+        bool showedHint = false;
+        while (folder == null)
         {
-            Title = "Select the folder with globalgamemanagers and globalgamemanagers.assets",
-            AllowMultiple = false
-        });
+            var pickResult = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select the folder with globalgamemanagers (or data.unity3d)",
+                AllowMultiple = false,
+                SuggestedStartLocation = startLocation
+            });
 
-        var folder = FileDialogUtils.GetOpenFolderDialogFolders(pickResult).FirstOrDefault();
-        if (string.IsNullOrEmpty(folder))
-        {
-            return;
+            var picked = FileDialogUtils.GetOpenFolderDialogFolders(pickResult).FirstOrDefault();
+            if (string.IsNullOrEmpty(picked))
+            {
+                if (showedHint)
+                {
+                    Workspace.SetProgressThreadSafe(1f, "");
+                }
+                return;
+            }
+
+            if (HasPipelineFiles(picked))
+            {
+                folder = picked;
+            }
+            else
+            {
+                showedHint = true;
+                startLocation = pickResult.FirstOrDefault();
+                Workspace.SetProgressThreadSafe(1f, "No globalgamemanagers or data.unity3d in that folder. Pick another folder.");
+            }
         }
 
         string ggmPath = Path.Combine(folder, "globalgamemanagers");
         string assetsPath = Path.Combine(folder, LowPipelineAuto.AssetsFileName);
-        if (!File.Exists(ggmPath) || !File.Exists(assetsPath))
+        string dataPath = Path.Combine(folder, "data.unity3d");
+        bool loose = File.Exists(ggmPath) && File.Exists(assetsPath);
+
+        var ggmInst = FindLoadedAssetsFile("globalgamemanagers");
+        var assetsInst = FindLoadedAssetsFile(LowPipelineAuto.AssetsFileName);
+        if (ggmInst == null || assetsInst == null)
         {
-            await MessageBoxUtil.ShowDialog(title, "The folder must contain both globalgamemanagers and globalgamemanagers.assets.");
-            return;
+            var toLoad = new List<string>();
+            if (loose)
+            {
+                if (ggmInst == null)
+                {
+                    toLoad.Add(ggmPath);
+                }
+                if (assetsInst == null)
+                {
+                    toLoad.Add(assetsPath);
+                }
+            }
+            else if (!Workspace.ItemLookup.ContainsKey("data.unity3d"))
+            {
+                toLoad.Add(dataPath);
+            }
+
+            if (toLoad.Count > 0)
+            {
+                await OpenFiles(toLoad);
+            }
+
+            ggmInst = FindLoadedAssetsFile("globalgamemanagers");
+            assetsInst = FindLoadedAssetsFile(LowPipelineAuto.AssetsFileName);
         }
 
-        var toLoad = new List<string>();
-        if (!Workspace.ItemLookup.ContainsKey("globalgamemanagers"))
+        if (ggmInst == null || assetsInst == null)
         {
-            toLoad.Add(ggmPath);
-        }
-        if (!Workspace.ItemLookup.ContainsKey(LowPipelineAuto.AssetsFileName))
-        {
-            toLoad.Add(assetsPath);
-        }
-        if (toLoad.Count > 0)
-        {
-            await OpenFiles(toLoad);
-        }
-
-        if (!Workspace.ItemLookup.TryGetValue("globalgamemanagers", out var ggmItem)
-            || ggmItem.Object is not AssetsTools.NET.Extra.AssetsFileInstance ggmInst
-            || !Workspace.ItemLookup.ContainsKey(LowPipelineAuto.AssetsFileName))
-        {
-            await MessageBoxUtil.ShowDialog(title, "The two files could not be loaded.");
+            await MessageBoxUtil.ShowDialog(title, loose
+                ? "The two files could not be loaded."
+                : "data.unity3d could not be loaded, or it does not contain globalgamemanagers and globalgamemanagers.assets.");
             return;
         }
 
@@ -457,18 +514,25 @@ public partial class MainViewModel : ViewModelBase
         var lines = new List<string>(run.Lines);
         if (run.Updates.Count > 0)
         {
-            try
+            if (loose)
             {
-                string backupPath = assetsPath + ".bak";
-                if (!File.Exists(backupPath))
+                try
                 {
-                    File.Copy(assetsPath, backupPath);
-                    lines.Add("Backup: " + Path.GetFileName(backupPath));
+                    string backupPath = assetsPath + ".bak";
+                    if (!File.Exists(backupPath))
+                    {
+                        File.Copy(assetsPath, backupPath);
+                        lines.Add("Backup: " + Path.GetFileName(backupPath));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lines.Add("Note: backup failed: " + ex.Message);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                lines.Add("Note: backup failed: " + ex.Message);
+                lines.Add("No backup was made (data.unity3d can be very large). Copy it yourself if you want one.");
             }
 
             foreach (var update in run.Updates)
@@ -477,7 +541,9 @@ public partial class MainViewModel : ViewModelBase
             }
 
             lines.Add("");
-            lines.Add("Changes are applied in memory. Use File > Save All to write them.");
+            lines.Add(loose
+                ? "Changes are applied in memory. Use File > Save All to write them."
+                : "Changes are applied in memory. Use File > Save All to repack data.unity3d.");
             Workspace.SetProgressThreadSafe(1f, $"Low preset applied to {run.Updates.Count} assets");
         }
         else
