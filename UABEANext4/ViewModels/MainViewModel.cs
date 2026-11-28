@@ -415,40 +415,29 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        // keep asking until a usable folder is picked (an accidental pick of the wrong
-        // folder just reopens the picker there) or the picker is cancelled
-        string? folder = null;
-        IStorageFolder? startLocation = null;
-        bool showedHint = false;
-        while (folder == null)
+        // pick a file instead of a folder: double-clicking empty space in the dialog does nothing,
+        // and the folder is only used once a file is chosen and confirmed
+        var pickResult = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            var pickResult = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-            {
-                Title = "Select the folder with globalgamemanagers (or data.unity3d)",
-                AllowMultiple = false,
-                SuggestedStartLocation = startLocation
-            });
+            Title = "Select globalgamemanagers or data.unity3d",
+            AllowMultiple = false,
+            FileTypeFilter = [
+                new FilePickerFileType("Unity game data") { Patterns = [ "globalgamemanagers", "globalgamemanagers.assets", "data.unity3d" ] },
+                new FilePickerFileType("All files (*.*)") { Patterns = [ "*" ] }
+            ]
+        });
 
-            var picked = FileDialogUtils.GetOpenFolderDialogFolders(pickResult).FirstOrDefault();
-            if (string.IsNullOrEmpty(picked))
-            {
-                if (showedHint)
-                {
-                    Workspace.SetProgressThreadSafe(1f, "");
-                }
-                return;
-            }
+        var pickedFile = FileDialogUtils.GetOpenFileDialogFiles(pickResult).FirstOrDefault();
+        if (string.IsNullOrEmpty(pickedFile))
+        {
+            return;
+        }
 
-            if (HasPipelineFiles(picked))
-            {
-                folder = picked;
-            }
-            else
-            {
-                showedHint = true;
-                startLocation = pickResult.FirstOrDefault();
-                Workspace.SetProgressThreadSafe(1f, "No globalgamemanagers or data.unity3d in that folder. Pick another folder.");
-            }
+        string? folder = Path.GetDirectoryName(pickedFile);
+        if (string.IsNullOrEmpty(folder) || !HasPipelineFiles(folder))
+        {
+            await MessageBoxUtil.ShowDialog(title, "That folder must contain globalgamemanagers and globalgamemanagers.assets, or data.unity3d.");
+            return;
         }
 
         string ggmPath = Path.Combine(folder, "globalgamemanagers");
